@@ -5,61 +5,77 @@
 **An open-source car head-unit UI that treats the driver like a person, not a spec sheet.**
 
 Clean, big-touch, two taps deep — and yes, it finally has a *delete button*.
+Built in the languages real car stereos actually run.
 
 </div>
 
 ---
 
-## Why
+## Why more than one build
 
-Modern car stereos have incredible hardware — USB, thumb-drive playback, dozens of speakers, studio-grade sound — bolted to software UX that looks like it "compiled, so ship it." Buried menus, tiny targets, five taps to skip a song, and somehow *no way to delete a track*.
+Modern car stereos have incredible hardware bolted to software UX that looks like
+it "compiled, so ship it." OpenDash is the opposite: a touch-first head-unit
+interface designed like someone has to use it while driving.
 
-OpenDash is the opposite: a touch-first head-unit interface designed like someone actually has to use it while driving. High contrast, one accent color, big hit areas, every screen reachable in two taps, and every destructive action reversible.
+But a good design is only half the point — it has to be buildable in the stacks
+real head units ship in. A single HTML file only represents Tesla's web UI and
+aftermarket browser wrappers. So OpenDash ships the **same UI implemented in the
+languages the industry actually uses**:
 
-## What's here
+| Build | Language | Where this stack ships | Status |
+|---|---|---|---|
+| **[`qt/`](qt/)** | **C++ + QML** (Qt Quick) | OpenAuto/Crankshaft (Pi dashes), most QNX & Automotive-Grade-Linux OEM head units | ✅ QML renders + lints clean; C++ reviewed |
+| **[`android/`](android/)** | **Kotlin + Jetpack Compose** | Android Automotive OS — Volvo, Polestar, GM, Ford, Honda, Renault | ✅ Builds a debug APK (`gradle assembleDebug`) |
+| **[`flutter/`](flutter/)** | **Dart** (Flutter) | Toyota 2026 RAV4 IVI, BMW apps, Automotive Grade Linux; runs on a Pi via flutter-elinux | 📝 Written & reviewed; not compiled in-session (Flutter SDK didn't bootstrap on the build box) — run `flutter analyze` |
+| **[`preview/`](preview/index.html)** | HTML/CSS/JS | Tesla's touchscreen UI; aftermarket web wrappers | ✅ Runs in any browser (the shared visual spec) |
 
-A complete, dependency-free front-end prototype (`index.html`) with:
+Every build shares one design, one palette, one set of behaviours — the web
+`preview/` is the reference, and the three native stacks implement it.
 
-- **Now Playing** — album art, large transport controls, scrubbable progress, volume, source switching (USB / Bluetooth / Radio), and a prominent **Delete** button.
-- **Media** — the USB library as a flat, scannable list; tap to play, one tap to delete, live "now playing" equalizer.
-- **Climate** — dual-zone temperature, 6-speed fan, A/C · Auto · Recirculate · front/rear defrost, and 3-stage seat heaters.
+## Screenshots
+
+From the Qt build, rendered by the real Qt Quick scene graph:
+
+| Now Playing | Media | Climate | Day mode |
+|---|---|---|---|
+| ![](qt/screenshots/now-playing.png) | ![](qt/screenshots/media.png) | ![](qt/screenshots/climate.png) | ![](qt/screenshots/now-playing-day.png) |
+
+## The design (shared by every build)
+
+- **Now Playing** — album art, large transport, scrubbable progress, volume,
+  source switching (USB / Bluetooth / Radio), and a prominent **Delete** button.
+- **Media** — the USB library as a flat, scannable list; tap to play, one tap to
+  delete, live "now playing" equalizer.
+- **Climate** — dual-zone temperature, 6-speed fan, A/C · Auto · Recirculate ·
+  front/rear defrost, and 3-stage seat heaters.
 - **Phone** — Bluetooth call surface (placeholder).
 - **Settings** — Night/Day instrument themes, brightness, °F/°C.
-- Live clock, simulated playback, and a deliberately single "instrument at night" visual world (amber-on-charcoal) with an in-app Day mode.
-
-No frameworks, no build step, no telemetry, no account. One HTML file.
-
-## Run it
-
-It's a static page — open it or serve it:
-
-```bash
-# just open
-open index.html            # macOS
-xdg-open index.html        # Linux
-
-# or serve (nice for a Pi kiosk)
-python3 -m http.server 8080
-# then browse to http://localhost:8080
-```
-
-### On a real head unit
-
-OpenDash is meant to embed anywhere a browser runs:
-
-- **Raspberry Pi** double-DIN builds — Chromium in kiosk mode (`chromium-browser --kiosk http://localhost:8080`).
-- **Android** head units — a WebView / PWA wrapper.
-- Any Linux dash with a modern browser.
-
-Target the screen's native resolution; the layout is landscape-first and collapses to a single column on narrow/portrait displays.
+- Live clock, simulated playback, and a single "instrument at night" visual world
+  (amber-on-charcoal) with an in-app Day mode.
 
 ## Design principles
 
 1. **Two taps, max.** Anything you need while moving is one or two touches away.
-2. **One accent.** Amber instrument lighting carries state; semantic colors (good/warning/critical) are separate.
+2. **One accent.** Amber instrument lighting carries state; semantic colors are separate.
 3. **Big targets, high contrast.** Legible at a glance, at speed, in daylight.
 4. **Reversible by default.** Nothing destructive without an undo path — starting with the delete button.
 5. **Yours.** No account, no cloud, no data leaving the car.
+
+## Build & run
+
+Each stack has its own README with build instructions:
+
+- **Qt** — `cd qt && cmake -S . -B build && cmake --build build` ([details](qt/README.md))
+- **Android** — open `android/` in Android Studio, or `./gradlew assembleDebug` ([details](android/README.md))
+- **Flutter** — `cd flutter && flutter create --platforms=android,linux,web . && flutter run` ([details](flutter/README.md))
+- **Web** — open `preview/index.html`, or `python3 -m http.server` in `preview/`
+
+### On a real head unit
+
+- **Raspberry Pi double-DIN** — the Qt build (like OpenAuto/Crankshaft) or the
+  Flutter build via flutter-elinux, fullscreen on EGLFS / Wayland.
+- **Android head units / AAOS** — the Android build, or the Flutter build.
+- **Any Linux dash with a browser** — the web `preview/` in Chromium kiosk mode.
 
 ## Roadmap
 
@@ -69,11 +85,10 @@ Target the screen's native resolution; the layout is landscape-first and collaps
 - [ ] Reverse-camera and CarPlay/Android Auto handoff
 - [ ] Voice ("skip", "delete this", "72 degrees")
 - [ ] Theming API + community skins
-- [ ] PWA manifest + offline install
 
 ## Contributing
 
-PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues: real media indexing, the undo/trash flow, and a proper PWA manifest.
+PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

@@ -1,0 +1,27 @@
+name: opendash
+description: OpenDash — an open-source car head-unit UI (Flutter build).
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # No third-party state or icon packages — plain ChangeNotifier + Material
+  # icons, so this runs anywhere Flutter does (incl. flutter-elinux on a Pi).
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  # To match the web preview exactly, add the fonts and uncomment:
+  # fonts:
+  #   - family: ChakraPetch
+  #     fonts:
+  #       - asset: assets/fonts/ChakraPetch-SemiBold.ttf
+  #   - family: Barlow
+  #     fonts:
+  #       - asset: assets/fonts/Barlow-Regular.ttf

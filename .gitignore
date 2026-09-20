@@ -5,7 +5,31 @@ Thumbs.db
 .idea/
 .vscode/
 
-# build / deps (none today, but future-proof)
+# build / deps
 node_modules/
 dist/
 *.log
+
+# Qt
+qt/build/
+build/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/captures/
+*.apk
+*.aab
+
+# Flutter / Dart
+flutter/.dart_tool/
+flutter/build/
+flutter/.flutter-plugins
+flutter/.flutter-plugins-dependencies
+flutter/android/.gradle/
+flutter/ios/Pods/
+.packages
