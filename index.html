@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="OpenDash — an open-source car head-unit UI. Clean, big-touch, two taps deep, and it has a delete button.">
+<title>OpenDash</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#070a0f; --screen:#0b0f16; --panel:#121824; --panel2:#19212f; --raise:#212b3b;
+    --line:#242f40; --ink:#eef3f9; --dim:#8896a8; --faint:#5c6879;
+    --amber:#ff9e2c; --amber-dim:#b96f1c; --cyan:#3ad0d8; --good:#54e07f; --bad:#ff5f57;
+    --shadow:0 18px 50px rgba(0,0,0,.55);
+    --r:18px; --r-sm:12px;
+    font-family:"Barlow",system-ui,sans-serif;
+  }
+  /* Deliberately single visual world: an automotive night screen. Day mode is an in-app feature. */
+  .stage.day{
+    --bg:#c9d1dc; --screen:#eef1f6; --panel:#ffffff; --panel2:#f3f6fb; --raise:#e7ecf3;
+    --line:#d3dae4; --ink:#161d29; --dim:#5a6879; --faint:#8b98a8;
+    --amber:#e07a12; --amber-dim:#c9690c; --cyan:#0e9aa2; --shadow:0 18px 44px rgba(30,50,80,.18);
+  }
+  html,body{height:100%;}
+  body{margin:0;background:
+      radial-gradient(1200px 600px at 20% -10%, #101725 0%, transparent 60%),
+      radial-gradient(1000px 700px at 110% 120%, #0e1622 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);display:flex;align-items:center;justify-content:center;}
+  .wrap{width:100%;max-width:1040px;padding:22px 16px;box-sizing:border-box;}
+  .brandline{display:flex;align-items:baseline;gap:12px;margin:0 4px 12px;flex-wrap:wrap;color:var(--dim);
+    font-family:"Chakra Petch",sans-serif;letter-spacing:.03em;font-size:12.5px;text-transform:uppercase;}
+  .brandline b{color:var(--ink);font-weight:700;letter-spacing:.12em;font-size:14px;}
+  .brandline .dot{width:6px;height:6px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber);}
+
+  /* the head unit */
+  .stage{background:linear-gradient(180deg,#151b26,#0a0e15);border-radius:26px;padding:10px;
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.04);}
+  .stage.day{background:linear-gradient(180deg,#dfe5ee,#c4ccd8);}
+  .screen{background:var(--screen);border-radius:20px;overflow:hidden;border:1px solid var(--line);
+    display:grid;grid-template-rows:auto 1fr;height:560px;}
+
+  /* status bar */
+  .status{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,var(--panel),transparent);}
+  .clock{font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:20px;letter-spacing:.04em;
+    font-variant-numeric:tabular-nums;}
+  .clock .sec{color:var(--amber);}
+  .date{color:var(--dim);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;font-family:"Chakra Petch",sans-serif;}
+  .status .spacer{flex:1;}
+  .stat{display:flex;align-items:center;gap:7px;color:var(--dim);font-size:13px;font-family:"Chakra Petch",sans-serif;
+    font-variant-numeric:tabular-nums;letter-spacing:.03em;}
+  .stat svg{width:16px;height:16px;}
+  .stat b{color:var(--ink);font-weight:600;}
+
+  /* body: content + nav rail */
+  .body{display:grid;grid-template-columns:1fr 92px;min-height:0;}
+  .content{min-height:0;overflow:auto;padding:20px;-webkit-overflow-scrolling:touch;}
+  .nav{border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;
+    padding:10px 8px;gap:6px;}
+  .navbtn{appearance:none;border:0;background:transparent;color:var(--dim);border-radius:14px;
+    padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+    font-family:"Chakra Petch",sans-serif;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    transition:background .15s,color .15s;}
+  .navbtn svg{width:26px;height:26px;}
+  .navbtn:hover{color:var(--ink);background:var(--panel2);}
+  .navbtn.on{color:#0b0f16;background:var(--amber);}
+  .stage.day .navbtn.on{color:#fff;}
+  .navbtn.on span{opacity:.9;}
+
+  h2.view{margin:0 0 16px;font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:14px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:10px;}
+  h2.view::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  /* now playing */
+  .np{display:grid;grid-template-columns:220px 1fr;gap:26px;align-items:center;}
+  .art{aspect-ratio:1;border-radius:var(--r);box-shadow:var(--shadow);position:relative;overflow:hidden;
+    display:flex;align-items:flex-end;padding:14px;box-sizing:border-box;}
+  .art .tag{font-family:"Chakra Petch",sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:rgba(255,255,255,.85);background:rgba(0,0,0,.28);padding:4px 9px;border-radius:20px;backdrop-filter:blur(4px);}
+  .npinfo{min-width:0;}
+  .npinfo .t{font-size:30px;font-weight:700;line-height:1.05;letter-spacing:-.01em;margin:0 0 4px;text-wrap:balance;}
+  .npinfo .a{color:var(--dim);font-size:16px;margin:0 0 18px;}
+  .bar{height:6px;border-radius:6px;background:var(--raise);position:relative;cursor:pointer;overflow:hidden;}
+  .bar .fill{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--amber-dim),var(--amber));border-radius:6px;width:0;}
+  .times{display:flex;justify-content:space-between;margin-top:7px;color:var(--faint);font-size:12.5px;
+    font-family:"Chakra Petch",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.04em;}
+  .transport{display:flex;align-items:center;gap:10px;margin-top:16px;}
+  .tbtn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);width:52px;height:52px;
+    border-radius:50%;display:grid;place-items:center;cursor:pointer;transition:transform .06s,background .15s,border-color .15s;}
+  .tbtn:hover{background:var(--panel2);}
+  .tbtn:active{transform:scale(.92);}
+  .tbtn svg{width:22px;height:22px;}
+  .tbtn.play{width:66px;height:66px;background:var(--amber);border-color:var(--amber);color:#0b0f16;box-shadow:0 8px 22px rgba(255,158,44,.35);}
+  .stage.day .tbtn.play{color:#fff;}
+  .tbtn.play svg{width:28px;height:28px;}
+  .tbtn.small{width:44px;height:44px;}
+  .tbtn.small svg{width:18px;height:18px;}
+  .tbtn.on{color:var(--amber);border-color:var(--amber-dim);}
+  .tbtn.del{margin-left:auto;width:auto;border-radius:26px;padding:0 18px;gap:9px;color:var(--bad);border-color:#4a2530;
+    background:rgba(255,95,87,.08);font-family:"Chakra Petch",sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;}
+  .tbtn.del:hover{background:rgba(255,95,87,.16);}
+  .subrow{display:flex;align-items:center;gap:16px;margin-top:18px;flex-wrap:wrap;}
+  .vol{display:flex;align-items:center;gap:10px;flex:1;min-width:180px;color:var(--dim);}
+  .vol svg{width:18px;height:18px;flex:none;}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:6px;background:var(--raise);flex:1;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 0 0 4px rgba(255,158,44,.18);}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border:0;border-radius:50%;background:var(--amber);cursor:pointer;}
+  .sources{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:4px;}
+  .src{appearance:none;border:0;background:transparent;color:var(--dim);padding:7px 14px;border-radius:18px;cursor:pointer;
+    font-family:"Chakra Petch",sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;}
+  .src.on{background:var(--raise);color:var(--ink);}
+
+  /* media list */
+  .list{display:flex;flex-direction:column;gap:6px;}
+  .track{display:grid;grid-template-columns:44px 1fr auto auto;align-items:center;gap:14px;padding:10px 12px;
+    border-radius:var(--r-sm);cursor:pointer;border:1px solid transparent;transition:background .12s;}
+  .track:hover{background:var(--panel);}
+  .track.cur{background:var(--panel);border-color:var(--line);}
+  .track .mini{width:44px;height:44px;border-radius:10px;flex:none;}
+  .track .meta{min-width:0;}
+  .track .meta .tt{font-weight:600;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .track .meta .ta{color:var(--dim);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .track .dur{color:var(--faint);font-family:"Chakra Petch",sans-serif;font-variant-numeric:tabular-nums;font-size:13px;letter-spacing:.04em;}
+  .track .trash{appearance:none;border:0;background:transparent;color:var(--faint);width:38px;height:38px;border-radius:10px;
+    display:grid;place-items:center;cursor:pointer;transition:color .12s,background .12s;}
+  .track .trash:hover{color:var(--bad);background:rgba(255,95,87,.12);}
+  .track .trash svg{width:19px;height:19px;}
+  .track .eq{display:none;gap:2px;align-items:flex-end;height:16px;}
+  .track.cur.playing .eq{display:inline-flex;}
+  .track.cur.playing .dur{display:none;}
+  .eq i{width:3px;background:var(--amber);border-radius:2px;animation:eq .9s ease-in-out infinite;}
+  .eq i:nth-child(2){animation-delay:.2s;} .eq i:nth-child(3){animation-delay:.4s;} .eq i:nth-child(4){animation-delay:.1s;}
+  @keyframes eq{0%,100%{height:5px}50%{height:16px}}
+  .usbhead{display:flex;align-items:center;gap:10px;color:var(--dim);font-family:"Chakra Petch",sans-serif;
+    font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:2px 4px 12px;}
+  .usbhead .cap{margin-left:auto;color:var(--faint);}
+  .empty{padding:40px;text-align:center;color:var(--dim);}
+
+  /* climate */
+  .climate{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .zone{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .zone .z{font-family:"Chakra Petch",sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);}
+  .zone .temp{font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:52px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+  .zone .temp span{font-size:22px;color:var(--amber);vertical-align:super;}
+  .stepper{display:flex;align-items:center;gap:14px;}
+  .stepper button{appearance:none;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);font-size:24px;cursor:pointer;display:grid;place-items:center;line-height:1;}
+  .stepper button:active{transform:scale(.9);}
+  .seat{display:flex;gap:6px;}
+  .seat b{font-family:"Chakra Petch",sans-serif;font-size:10px;letter-spacing:.1em;color:var(--faint);align-self:center;text-transform:uppercase;margin-right:4px;}
+  .heat{width:26px;height:14px;border-radius:4px;background:var(--raise);cursor:pointer;border:1px solid var(--line);}
+  .heat.on{background:linear-gradient(180deg,#ff7a3c,#ff9e2c);border-color:transparent;box-shadow:0 0 8px rgba(255,122,60,.5);}
+  .ctrls{grid-column:1 / -1;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+  .toggle{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--dim);border-radius:14px;
+    padding:14px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;font-family:"Barlow";font-size:14px;font-weight:600;transition:.12s;}
+  .toggle svg{width:20px;height:20px;flex:none;}
+  .toggle.on{color:#0b0f16;background:var(--amber);border-color:var(--amber);}
+  .stage.day .toggle.on{color:#fff;}
+  .fanrow{grid-column:1 / -1;display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 18px;}
+  .fanrow .lab{display:flex;align-items:center;gap:9px;color:var(--dim);font-family:"Chakra Petch",sans-serif;font-size:12px;letter-spacing:.08em;text-transform:uppercase;}
+  .fanrow .lab svg{width:20px;height:20px;}
+  .fanbars{display:flex;gap:5px;flex:1;}
+  .fanbars i{flex:1;height:22px;border-radius:5px;background:var(--raise);cursor:pointer;transition:.12s;}
+  .fanbars i.on{background:linear-gradient(180deg,var(--cyan),#2494a0);}
+
+  /* generic panels (phone / settings) */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;}
+  .rowitem{display:flex;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid var(--line);}
+  .rowitem:last-child{border-bottom:0;}
+  .rowitem .ic{width:40px;height:40px;border-radius:11px;background:var(--panel2);display:grid;place-items:center;color:var(--dim);flex:none;}
+  .rowitem .ic svg{width:20px;height:20px;}
+  .rowitem .grow{flex:1;min-width:0;}
+  .rowitem .grow .p{font-weight:600;}
+  .rowitem .grow .s{color:var(--dim);font-size:13px;}
+  .rowitem .val{color:var(--dim);font-family:"Chakra Petch",sans-serif;font-variant-numeric:tabular-nums;font-size:14px;}
+  .sw{width:52px;height:30px;border-radius:16px;background:var(--raise);border:1px solid var(--line);position:relative;cursor:pointer;flex:none;transition:.15s;}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--ink);transition:.18s;}
+  .sw.on{background:var(--amber);border-color:var(--amber);}
+  .sw.on::after{left:25px;background:#0b0f16;}
+  .about{color:var(--dim);font-size:14px;line-height:1.6;}
+  .about b{color:var(--ink);}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;
+    padding:5px 12px;font-family:"Chakra Petch",sans-serif;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:2px 4px 2px 0;}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;
+    background:var(--raise);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:12px 18px;
+    box-shadow:var(--shadow);display:flex;align-items:center;gap:11px;transition:.25s;max-width:88vw;z-index:20;font-size:14px;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast svg{width:20px;height:20px;color:var(--bad);flex:none;}
+  .toast b{color:var(--amber);}
+
+  .foot{margin:14px 6px 0;color:var(--faint);font-size:12.5px;line-height:1.6;}
+  .foot b{color:var(--dim);}
+
+  @media(max-width:720px){
+    .screen{height:auto;grid-template-rows:auto auto 1fr;}
+    .body{grid-template-columns:1fr;grid-row:3;}
+    .nav{flex-direction:row;border-left:0;border-top:1px solid var(--line);order:2;justify-content:space-between;overflow-x:auto;}
+    .navbtn{flex:1;padding:10px 4px;}
+    .content{order:1;}
+    .np{grid-template-columns:1fr;text-align:left;}
+    .art{max-width:200px;}
+    .climate{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brandline"><span class="dot"></span><b>OpenDash</b><span>open-source head-unit UI &nbsp;·&nbsp; the one with a delete button</span></div>
+
+  <div class="stage" id="stage">
+    <div class="screen">
+      <!-- status -->
+      <div class="status">
+        <div>
+          <div class="clock" id="clock">--:--<span class="sec">:--</span></div>
+          <div class="date" id="date">—</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="stat" title="Outside temperature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 14.76V5a2 2 0 1 0-4 0v9.76a4 4 0 1 0 4 0Z"/></svg>
+          <b id="outside">41&deg;</b>
+        </div>
+        <div class="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 12a6 6 0 0 1 12 0M9 12a3 3 0 0 1 6 0"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg><span>BT</span></div>
+        <div class="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 12 4l9 4.5M6 11l6-3 6 3M9 13.5l3-1.5 3 1.5"/></svg><b>4G</b></div>
+      </div>
+
+      <!-- body -->
+      <div class="body">
+        <div class="content" id="content"><!-- views injected --></div>
+        <nav class="nav" id="nav"></nav>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>MIT-licensed · runs anywhere a browser does</b> — designed to embed on a Raspberry-Pi head unit, an Android
+    double-DIN, or any Linux dash. Everything you see is touch-first, two taps deep max, and yes: you can delete a track.
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastIcon"></span><span id="toastMsg"></span></div>
+
+<script>
+/* ---------- icons ---------- */
+const IC = {
+  music:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
+  list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+  climate:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>',
+  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.2A1.6 1.6 0 0 0 7 19.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 5 12.6H4.8a2 2 0 0 1 0-4H5a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 12 3.4V3a2 2 0 0 1 4 0v.2a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8Z"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>',
+  prev:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5.5v13a1 1 0 0 1-1.5.87l-9-6.5a1 1 0 0 1 0-1.74l9-6.5A1 1 0 0 1 20 5.5Z"/></svg>',
+  next:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5.5v13a1 1 0 0 0 1.5.87l9-6.5a1 1 0 0 0 0-1.74l-9-6.5A1 1 0 0 0 4 5.5Z"/></svg>',
+  shuffle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+  repeat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6"/></svg>',
+  vol:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5 6 9H2v6h4l5 4V5ZM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12"/></svg>',
+  fan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 2-7s2 2 0 5M14 12c4 0 7 1 7 2s-2 2-5 0M12 14c0 4-1 7-2 7s-2-2 0-5M10 12c-4 0-7-1-7-2s2-2 5 0"/></svg>',
+  ac:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M4 6l16 12M20 6 4 18M2 12h20"/></svg>',
+  snow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M4 7l16 10M20 7 4 17"/></svg>',
+  auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 16 9 8l3 8M6.8 14h4.4M15 8v8M15 8h3a2 2 0 0 1 0 4h-3"/></svg>',
+  recirc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16M21 4v4h-4M3 20v-4h4"/></svg>',
+  defrost:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 13a8 8 0 0 1 16 0M6 20c.5-2 1-3 1-3M11 20c.5-2 1-3 1-3M16 20c.5-2 1-3 1-3"/></svg>',
+  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
+  code:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 18-6-6 6-6M15 6l6 6-6 6"/></svg>',
+};
+
+/* ---------- data ---------- */
+const palettes = [
+  ['#ff9e2c','#7a3bff'], ['#3ad0d8','#155e75'], ['#ff5f7e','#7a1f3d'], ['#54e07f','#1c5e3a'],
+  ['#ffcf5c','#b45309'], ['#6aa1ff','#1e2f66'], ['#ff7a3c','#7a2410'], ['#c58bff','#3b1470'],
+];
+function artCss(seed){const p=palettes[seed%palettes.length];
+  return `background:radial-gradient(120% 120% at 20% 15%, ${p[0]} 0%, ${p[1]} 55%, #0a0e15 120%);`;}
+
+let tracks = [
+  {t:'Cold Start', a:'Idle Hands', d:222},
+  {t:'Amber Cluster', a:'Nightdrive', d:255},
+  {t:'Other Side of the Pillow', a:'Kova', d:178},
+  {t:'Thumb Drive Symphony', a:'USB 1', d:320},
+  {t:'Delete Button', a:'The Engineers', d:187},
+  {t:'Ham Radio Heartbreak', a:'Clusterfunk', d:231},
+  {t:'DIN Mount Blues', a:'Scary Side', d:242},
+];
+tracks.forEach((t,i)=>t.seed=i+1);
+
+const state = {
+  view:'now', idx:1, playing:true, pos:64, vol:62, source:'USB', day:false,
+  climate:{ driver:70, passenger:72, fan:3, ac:true, auto:true, recirc:false, defrostF:false, defrostR:false, seatL:2, seatR:0 },
+  brightness:80, units:'F',
+};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const fmt = s => { s=Math.max(0,Math.round(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+function toast(msg, danger){
+  $('#toastIcon').innerHTML = danger ? IC.trash : IC.bolt;
+  $('#toastIcon').style.color = danger ? 'var(--bad)' : 'var(--amber)';
+  $('#toastMsg').innerHTML = msg;
+  const el=$('#toast'); el.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'), 2600);
+}
+
+/* ---------- nav ---------- */
+const NAV=[['now','Now Playing',IC.music],['media','Media',IC.list],['climate','Climate',IC.climate],['phone','Phone',IC.phone],['set','Settings',IC.settings]];
+function renderNav(){
+  $('#nav').innerHTML = NAV.map(([id,l,ic])=>
+    `<button class="navbtn ${state.view===id?'on':''}" data-v="${id}">${ic}<span>${l}</span></button>`).join('');
+  $('#nav').querySelectorAll('.navbtn').forEach(b=>b.onclick=()=>{state.view=b.dataset.v; render();});
+}
+
+/* ---------- views ---------- */
+function viewNow(){
+  if(!tracks.length) return `<h2 class="view">Now Playing</h2><div class="empty">Nothing loaded. Add a thumb drive or pick a source.</div>`;
+  const tr=tracks[state.idx%tracks.length];
+  const pct=Math.min(100, state.pos/tr.d*100);
+  return `
+  <h2 class="view">Now Playing</h2>
+  <div class="np">
+    <div class="art" style="${artCss(tr.seed)}"><span class="tag">${state.source}</span></div>
+    <div class="npinfo">
+      <p class="t">${tr.t}</p>
+      <p class="a">${tr.a}</p>
+      <div class="bar" id="seek"><div class="fill" style="width:${pct}%"></div></div>
+      <div class="times"><span>${fmt(state.pos)}</span><span>-${fmt(tr.d-state.pos)}</span></div>
+      <div class="transport">
+        <button class="tbtn small ${state.shuffle?'on':''}" data-a="shuffle" title="Shuffle">${IC.shuffle}</button>
+        <button class="tbtn" data-a="prev" title="Previous">${IC.prev}</button>
+        <button class="tbtn play" data-a="play" title="Play / Pause">${state.playing?IC.pause:IC.play}</button>
+        <button class="tbtn" data-a="next" title="Next">${IC.next}</button>
+        <button class="tbtn small ${state.repeat?'on':''}" data-a="repeat" title="Repeat">${IC.repeat}</button>
+        <button class="tbtn del" data-a="delete" title="Delete this track">${IC.trash}<span>Delete</span></button>
+      </div>
+      <div class="subrow">
+        <label class="vol">${IC.vol}<input type="range" id="vol" min="0" max="100" value="${state.vol}"></label>
+        <div class="sources">
+          ${['USB','Bluetooth','Radio'].map(s=>`<button class="src ${state.source===s?'on':''}" data-src="${s}">${s}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function viewMedia(){
+  if(!tracks.length) return `<h2 class="view">Media</h2><div class="empty">Library empty — every track deleted. Bold move.</div>`;
+  const rows = tracks.map((tr,i)=>`
+    <div class="track ${i===state.idx?'cur':''} ${(i===state.idx&&state.playing)?'playing':''}" data-i="${i}">
+      <span class="mini" style="${artCss(tr.seed)}"></span>
+      <div class="meta"><div class="tt">${tr.t}</div><div class="ta">${tr.a}</div></div>
+      <span class="eq"><i></i><i></i><i></i><i></i></span>
+      <span class="dur">${fmt(tr.d)}</span>
+      <button class="trash" data-del="${i}" title="Delete">${IC.trash}</button>
+    </div>`).join('');
+  return `<h2 class="view">Media</h2>
+    <div class="usbhead">USB&nbsp;1 &nbsp;·&nbsp; ${tracks.length} tracks<span class="cap">${(tracks.length*7.4).toFixed(1)} MB / 32 GB</span></div>
+    <div class="list">${rows}</div>`;
+}
+
+function viewClimate(){
+  const c=state.climate;
+  const heat=(side,n)=>[0,1,2,3].slice(1).map(l=>`<span class="heat ${c[side]>=l?'on':''}" data-heat="${side}" data-lvl="${l}"></span>`).join('');
+  const zone=(side,label)=>`
+    <div class="zone">
+      <div class="z">${label}</div>
+      <div class="temp">${c[side]}<span>&deg;F</span></div>
+      <div class="stepper">
+        <button data-clim="${side}" data-d="-1">&minus;</button>
+        <button data-clim="${side}" data-d="1">&plus;</button>
+      </div>
+      <div class="seat"><b>Seat</b>${heat(side==='driver'?'seatL':'seatR')}</div>
+    </div>`;
+  const tg=(k,ic,l)=>`<button class="toggle ${c[k]?'on':''}" data-clim-t="${k}">${ic}<span>${l}</span></button>`;
+  return `<h2 class="view">Climate</h2>
+  <div class="climate">
+    ${zone('driver','Driver')}
+    ${zone('passenger','Passenger')}
+    <div class="fanrow">
+      <span class="lab">${IC.fan} Fan</span>
+      <div class="fanbars">${[1,2,3,4,5,6].map(l=>`<i class="${c.fan>=l?'on':''}" data-fan="${l}"></i>`).join('')}</div>
+    </div>
+    <div class="ctrls">
+      ${tg('ac',IC.snow,'A/C')}
+      ${tg('auto',IC.auto,'Auto')}
+      ${tg('recirc',IC.recirc,'Recirculate')}
+      ${tg('defrostF',IC.defrost,'Front Defrost')}
+      ${tg('defrostR',IC.defrost,'Rear Defrost')}
+    </div>
+  </div>`;
+}
+
+function viewPhone(){
+  const calls=[['Boden Research','Mobile · 2m ago','out'],['Shop','Missed · 1h ago','miss'],['Voicemail','1 new','vm']];
+  return `<h2 class="view">Phone</h2>
+   <div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:14px">
+     <span class="ic" style="width:46px;height:46px;color:var(--good)">${IC.phone}</span>
+     <div class="grow"><div class="p">Pixel 8 &mdash; Shane</div><div class="s">Connected via Bluetooth · calls &amp; media</div></div>
+     <span class="pill">HD Voice</span>
+   </div>
+   <div class="card">
+     ${calls.map(([n,s])=>`<div class="rowitem"><span class="ic">${IC.phone}</span><div class="grow"><div class="p">${n}</div><div class="s">${s}</div></div><span class="val">Call</span></div>`).join('')}
+   </div>`;
+}
+
+function viewSettings(){
+  const sw=(on)=>`<div class="sw ${on?'on':''}"></div>`;
+  return `<h2 class="view">Settings</h2>
+   <div class="card" style="margin-bottom:14px">
+     <div class="rowitem"><span class="ic">${IC.moon}</span><div class="grow"><div class="p">Night mode</div><div class="s">Dark instrument look for driving after dark</div></div><div class="sw ${!state.day?'on':''}" data-set="day"></div></div>
+     <div class="rowitem"><span class="ic">${IC.bolt}</span><div class="grow"><div class="p">Screen brightness</div><div class="s">Auto-dims with the headlights</div></div><span class="val">${state.brightness}%</span></div>
+     <div class="rowitem"><span class="ic">${IC.climate}</span><div class="grow"><div class="p">Temperature units</div><div class="s">Cabin &amp; outside readout</div></div><span class="val" data-set="units" style="cursor:pointer">&deg;${state.units}</span></div>
+   </div>
+   <div class="card about">
+     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;color:var(--amber)">${IC.code}<b style="color:var(--ink);font-family:'Chakra Petch';letter-spacing:.08em;text-transform:uppercase;font-size:13px">About OpenDash</b></div>
+     A head-unit UI that treats the driver like a person, not a spec sheet. <b>Two taps deep, max.</b> Big targets,
+     high contrast, one accent, and every destructive action is reversible &mdash; including, at long last, deleting a track.
+     <div style="margin-top:12px">
+       <span class="pill">${IC.code} MIT license</span>
+       <span class="pill">Raspberry&nbsp;Pi / Android</span>
+       <span class="pill">No account, no telemetry</span>
+       <span class="pill">CAN-bus ready</span>
+     </div>
+     <div style="margin-top:12px;color:var(--faint);font-size:12.5px">v0.1 &ldquo;Delete Button&rdquo; · inspired by every car stereo that made you tap five times to skip a song.</div>
+   </div>`;
+}
+
+/* ---------- render + wire ---------- */
+function render(){
+  renderNav();
+  const v=state.view;
+  $('#content').innerHTML = v==='now'?viewNow():v==='media'?viewMedia():v==='climate'?viewClimate():v==='phone'?viewPhone():viewSettings();
+  wire();
+}
+function wire(){
+  document.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>action(b.dataset.a));
+  document.querySelectorAll('[data-src]').forEach(b=>b.onclick=()=>{state.source=b.dataset.src;render();toast('Source: <b>'+b.dataset.src+'</b>');});
+  const vol=$('#vol'); if(vol) vol.oninput=e=>state.vol=+e.target.value;
+  const seek=$('#seek'); if(seek) seek.onclick=e=>{const r=seek.getBoundingClientRect();const tr=tracks[state.idx%tracks.length];state.pos=(e.clientX-r.left)/r.width*tr.d;render();};
+  document.querySelectorAll('[data-i]').forEach(el=>el.onclick=e=>{if(e.target.closest('[data-del]'))return;state.idx=+el.dataset.i;state.pos=0;state.playing=true;state.view='now';render();});
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{e.stopPropagation();del(+b.dataset.del);});
+  // climate
+  document.querySelectorAll('[data-clim]').forEach(b=>b.onclick=()=>{const s=b.dataset.clim;state.climate[s]=Math.max(60,Math.min(85,state.climate[s]+ +b.dataset.d));render();});
+  document.querySelectorAll('[data-clim-t]').forEach(b=>b.onclick=()=>{const k=b.dataset.climT;state.climate[k]=!state.climate[k];render();});
+  document.querySelectorAll('[data-fan]').forEach(b=>b.onclick=()=>{state.climate.fan=+b.dataset.fan;render();});
+  document.querySelectorAll('[data-heat]').forEach(b=>b.onclick=()=>{const s=b.dataset.heat,l=+b.dataset.lvl;state.climate[s]=state.climate[s]===l?l-1:l;render();});
+  // settings
+  document.querySelectorAll('[data-set]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.set==='day'){setDay(!state.day);}
+    else if(b.dataset.set==='units'){state.units=state.units==='F'?'C':'F';render();}
+  });
+}
+function action(a){
+  const n=tracks.length;
+  if(a==='play'){state.playing=!state.playing;}
+  else if(a==='next'){state.idx=(state.idx+1)%n;state.pos=0;state.playing=true;}
+  else if(a==='prev'){ if(state.pos>4){state.pos=0;} else {state.idx=(state.idx-1+n)%n;state.pos=0;} state.playing=true;}
+  else if(a==='shuffle'){state.shuffle=!state.shuffle;toast(state.shuffle?'Shuffle on':'Shuffle off');}
+  else if(a==='repeat'){state.repeat=!state.repeat;toast(state.repeat?'Repeat on':'Repeat off');}
+  else if(a==='delete'){del(state.idx%n);return;}
+  render();
+}
+function del(i){
+  if(!tracks.length) return;
+  const gone=tracks[i];
+  tracks.splice(i,1);
+  if(state.idx>=tracks.length) state.idx=Math.max(0,tracks.length-1);
+  if(!tracks.length) state.playing=false;
+  toast('Removed <b>'+gone.t+'</b> — see? A delete button. Was that so hard?', true);
+  render();
+}
+function setDay(on){ state.day=on; $('#stage').classList.toggle('day',on); render(); }
+
+/* ---------- clock + playback tick ---------- */
+function tick(){
+  const d=new Date();
+  let h=d.getHours(); const m=String(d.getMinutes()).padStart(2,'0'); const s=String(d.getSeconds()).padStart(2,'0');
+  h=String(h).padStart(2,'0');
+  $('#clock').innerHTML = h+':'+m+'<span class="sec">:'+s+'</span>';
+  $('#date').textContent = d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+}
+setInterval(tick,1000); tick();
+
+setInterval(()=>{
+  if(!state.playing || !tracks.length) return;
+  const tr=tracks[state.idx%tracks.length];
+  state.pos+=1;
+  if(state.pos>=tr.d){ state.pos=0; if(!state.repeat) state.idx=(state.idx+1)%tracks.length; }
+  if(state.view==='now'){
+    const trc=tracks[state.idx%tracks.length];
+    const fill=$('#seek .fill'); const times=document.querySelector('.times');
+    if(fill) fill.style.width=Math.min(100,state.pos/trc.d*100)+'%';
+    if(times) times.innerHTML='<span>'+fmt(state.pos)+'</span><span>-'+fmt(trc.d-state.pos)+'</span>';
+  }
+},1000);
+
+render();
+</script>
+</body>
+</html>
