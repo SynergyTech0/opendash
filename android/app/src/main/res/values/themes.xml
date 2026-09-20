@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The Compose content owns all styling; this base theme just gives a
+         dark, edge-to-edge shell so there's no white flash before Compose
+         draws the amber-on-charcoal instrument look. -->
+    <style name="Theme.OpenDash" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

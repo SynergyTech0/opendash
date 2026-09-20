@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Marks the app for Android Automotive OS. A production media/IVI app would
+     declare <uses name="media"/> or template capabilities here. -->
+<automotiveApp>
+    <uses name="notification" />
+</automotiveApp>
