@@ -7,6 +7,8 @@
 Clean, big-touch, two taps deep — and yes, it finally has a *delete button*.
 Built in the languages real car stereos actually run.
 
+**▶ [Live demo](https://synergytech0.github.io/opendash/)** — the web preview, running in your browser.
+
 </div>
 
 ---
