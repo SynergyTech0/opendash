@@ -39,7 +39,15 @@
     box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.04);}
   .stage.day{background:linear-gradient(180deg,#dfe5ee,#c4ccd8);}
   .screen{background:var(--screen);border-radius:20px;overflow:hidden;border:1px solid var(--line);
-    display:grid;grid-template-rows:auto 1fr;height:560px;}
+    display:grid;grid-template-rows:auto 1fr;height:560px;position:relative;}
+  /* user-chosen dash background: sits behind the UI, content scrolls over it */
+  .screen::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:var(--dash-bg,transparent);background-size:cover;background-position:center;}
+  .screen.has-bg::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(7,10,15,.34),rgba(7,10,15,.56));}
+  .stage.day .screen.has-bg::after{background:linear-gradient(180deg,rgba(238,241,246,.30),rgba(238,241,246,.5));}
+  .status,.body{position:relative;z-index:1;}
+  .screen.has-bg .content{background:transparent;}
 
   /* status bar */
   .status{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);
@@ -184,6 +192,20 @@
   .pill{display:inline-flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);border-radius:20px;
     padding:5px 12px;font-family:"Chakra Petch",sans-serif;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:2px 4px 2px 0;}
 
+  /* dash background picker (Settings) */
+  .bgrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 2px 2px;}
+  .swatch{width:54px;height:38px;border-radius:10px;border:2px solid var(--line);cursor:pointer;
+    background-size:cover;background-position:center;padding:0;appearance:none;transition:border-color .12s,box-shadow .12s;}
+  .swatch:hover{border-color:var(--amber-dim);}
+  .swatch.on{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,158,44,.22);}
+  .swatch.none{display:grid;place-items:center;color:var(--faint);background:var(--panel2);}
+  .swatch.none svg{width:18px;height:18px;}
+  .bgup{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:10px;cursor:pointer;
+    border:1px dashed var(--line);color:var(--dim);background:var(--panel2);
+    font-family:"Chakra Petch",sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;}
+  .bgup:hover{color:var(--ink);border-color:var(--amber-dim);}
+  .bgup svg{width:16px;height:16px;}
+
   /* toast */
   .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;
     background:var(--raise);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:12px 18px;
@@ -212,7 +234,7 @@
   <div class="brandline"><span class="dot"></span><b>OpenDash</b><span>open-source head-unit UI &nbsp;·&nbsp; the one with a delete button</span></div>
 
   <div class="stage" id="stage">
-    <div class="screen">
+    <div class="screen" id="screen">
       <!-- status -->
       <div class="status">
         <div>
@@ -269,6 +291,8 @@ const IC = {
   moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>',
   bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>',
   code:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 18-6-6 6-6M15 6l6 6-6 6"/></svg>',
+  image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>',
+  ban:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6 18.4 18.4"/></svg>',
 };
 
 /* ---------- data ---------- */
@@ -278,6 +302,15 @@ const palettes = [
 ];
 function artCss(seed){const p=palettes[seed%palettes.length];
   return `background:radial-gradient(120% 120% at 20% 15%, ${p[0]} 0%, ${p[1]} 55%, #0a0e15 120%);`;}
+
+/* built-in dash backgrounds (or bring your own photo) */
+const BG_PRESETS = {
+  aurora:'linear-gradient(135deg,#0b2b3a,#132a4d 45%,#3a1d5c)',
+  ocean:'radial-gradient(140% 120% at 20% 0%,#0e3350,#071019)',
+  sunset:'linear-gradient(135deg,#3a1414,#7a2410 55%,#b45309)',
+  ember:'radial-gradient(120% 120% at 80% 10%,#4a3008,#0a0e15)',
+  carbon:'repeating-linear-gradient(45deg,#0c111a 0 11px,#0f1522 11px 22px)',
+};
 
 let tracks = [
   {t:'Cold Start', a:'Idle Hands', d:222},
@@ -293,7 +326,7 @@ tracks.forEach((t,i)=>t.seed=i+1);
 const state = {
   view:'now', idx:1, playing:true, pos:64, vol:62, source:'USB', day:false,
   climate:{ driver:70, passenger:72, fan:3, ac:true, auto:true, recirc:false, defrostF:false, defrostR:false, seatL:2, seatR:0 },
-  brightness:80, units:'F',
+  brightness:80, units:'F', bg:{type:'none'},
 };
 
 /* ---------- helpers ---------- */
@@ -306,6 +339,23 @@ function toast(msg, danger){
   const el=$('#toast'); el.classList.add('show');
   clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'), 2600);
 }
+
+/* ---------- dash background ---------- */
+function bgValue(bg){
+  if(!bg || bg.type==='none') return '';
+  if(bg.type==='preset') return BG_PRESETS[bg.key] || '';
+  if(bg.type==='image' && bg.data) return 'center/cover no-repeat url("'+bg.data+'")';
+  return '';
+}
+function applyBg(){
+  const v=bgValue(state.bg), scr=$('#screen'); if(!scr) return;
+  document.documentElement.style.setProperty('--dash-bg', v || 'transparent');
+  scr.classList.toggle('has-bg', !!v);
+  scr.dataset.bg = state.bg ? state.bg.type : 'none';
+}
+function saveBg(){ try{ localStorage.setItem('opendash.bg', JSON.stringify(state.bg)); }catch(e){} }
+function loadBg(){ try{ const s=localStorage.getItem('opendash.bg'); if(s) state.bg=JSON.parse(s); }catch(e){} }
+function setBg(bg){ state.bg=bg; saveBg(); applyBg(); render(); }
 
 /* ---------- nav ---------- */
 const NAV=[['now','Now Playing',IC.music],['media','Media',IC.list],['climate','Climate',IC.climate],['phone','Phone',IC.phone],['set','Settings',IC.settings]];
@@ -415,6 +465,18 @@ function viewSettings(){
      <div class="rowitem"><span class="ic">${IC.bolt}</span><div class="grow"><div class="p">Screen brightness</div><div class="s">Auto-dims with the headlights</div></div><span class="val">${state.brightness}%</span></div>
      <div class="rowitem"><span class="ic">${IC.climate}</span><div class="grow"><div class="p">Temperature units</div><div class="s">Cabin &amp; outside readout</div></div><span class="val" data-set="units" style="cursor:pointer">&deg;${state.units}</span></div>
    </div>
+   <div class="card" style="margin-bottom:14px">
+     <div class="rowitem" style="border-bottom:0;padding-bottom:2px">
+       <span class="ic">${IC.image}</span>
+       <div class="grow"><div class="p">Dash background</div><div class="s">A backdrop behind the dash — a preset or your own photo</div></div>
+     </div>
+     <div class="bgrow">
+       <button class="swatch none ${state.bg.type==='none'?'on':''}" data-bg-none title="None">${IC.ban}</button>
+       ${Object.entries(BG_PRESETS).map(([k,v])=>`<button class="swatch ${state.bg.type==='preset'&&state.bg.key===k?'on':''}" style="background:${v}" data-bg-preset="${k}" title="${k[0].toUpperCase()+k.slice(1)}"></button>`).join('')}
+       ${state.bg.type==='image'?`<button class="swatch on" style="background-image:url('${state.bg.data}')" data-bg-none title="Your image (tap to clear)"></button>`:''}
+       <label class="bgup">${IC.image}<span>${state.bg.type==='image'?'Change':'Upload'}</span><input type="file" accept="image/*" hidden data-bg-file></label>
+     </div>
+   </div>
    <div class="card about">
      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;color:var(--amber)">${IC.code}<b style="color:var(--ink);font-family:'Chakra Petch';letter-spacing:.08em;text-transform:uppercase;font-size:13px">About OpenDash</b></div>
      A head-unit UI that treats the driver like a person, not a spec sheet. <b>Two taps deep, max.</b> Big targets,
@@ -453,6 +515,17 @@ function wire(){
     if(b.dataset.set==='day'){setDay(!state.day);}
     else if(b.dataset.set==='units'){state.units=state.units==='F'?'C':'F';render();}
   });
+  // dash background
+  document.querySelectorAll('[data-bg-preset]').forEach(b=>b.onclick=()=>setBg({type:'preset',key:b.dataset.bgPreset}));
+  document.querySelectorAll('[data-bg-none]').forEach(b=>b.onclick=()=>setBg({type:'none'}));
+  const bgFile=document.querySelector('[data-bg-file]');
+  if(bgFile) bgFile.onchange=e=>{
+    const f=e.target.files&&e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{ setBg({type:'image',data:rd.result}); toast('Background set — <b>'+f.name+'</b>'); };
+    rd.onerror=()=>toast('Could not read that image',true);
+    rd.readAsDataURL(f);
+  };
 }
 function action(a){
   const n=tracks.length;
@@ -498,7 +571,9 @@ setInterval(()=>{
   }
 },1000);
 
+loadBg();
 render();
+applyBg();
 </script>
 </body>
 </html>
