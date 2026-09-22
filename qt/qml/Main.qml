@@ -33,6 +33,33 @@ Window {
         border.width: 1
         clip: true
 
+        // ---- user-chosen dash background (sits behind the whole UI) ----
+        Item {
+            anchors.fill: parent
+            visible: Dash.bgType !== "none"
+
+            Rectangle { anchors.fill: parent; visible: Dash.bgType === "preset" && Dash.bgKey === "aurora"
+                gradient: Gradient { GradientStop { position: 0.0; color: "#0b2b3a" } GradientStop { position: 0.45; color: "#132a4d" } GradientStop { position: 1.0; color: "#3a1d5c" } } }
+            Rectangle { anchors.fill: parent; visible: Dash.bgType === "preset" && Dash.bgKey === "ocean"
+                gradient: Gradient { GradientStop { position: 0.0; color: "#0e3350" } GradientStop { position: 1.0; color: "#071019" } } }
+            Rectangle { anchors.fill: parent; visible: Dash.bgType === "preset" && Dash.bgKey === "sunset"
+                gradient: Gradient { GradientStop { position: 0.0; color: "#3a1414" } GradientStop { position: 0.55; color: "#7a2410" } GradientStop { position: 1.0; color: "#b45309" } } }
+            Rectangle { anchors.fill: parent; visible: Dash.bgType === "preset" && Dash.bgKey === "ember"
+                gradient: Gradient { GradientStop { position: 0.0; color: "#4a3008" } GradientStop { position: 1.0; color: "#0a0e15" } } }
+            Rectangle { anchors.fill: parent; visible: Dash.bgType === "preset" && Dash.bgKey === "carbon"
+                gradient: Gradient { GradientStop { position: 0.0; color: "#0f1522" } GradientStop { position: 1.0; color: "#0c111a" } } }
+
+            Image { anchors.fill: parent; visible: Dash.bgType === "image"
+                source: Dash.bgImage; fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: false }
+
+            // legibility scrim — lighter in day mode, darker at night
+            Rectangle {
+                anchors.fill: parent
+                color: Theme.day ? Qt.rgba(0.93, 0.945, 0.965, 0.42)
+                                 : Qt.rgba(0.027, 0.039, 0.059, 0.5)
+            }
+        }
+
         Column {
             anchors.fill: parent
 

@@ -63,6 +63,33 @@ class DashColors {
   );
 }
 
+/// Built-in dash-background preset keys, shared by every OpenDash stack.
+const List<String> kBgPresetKeys = ['aurora', 'ocean', 'sunset', 'ember', 'carbon'];
+
+/// The gradient for a background preset key, or null for "none"/unknown.
+Gradient? bgPresetGradient(String? key) {
+  const begin = Alignment.topLeft, end = Alignment.bottomRight;
+  switch (key) {
+    case 'aurora':
+      return const LinearGradient(begin: begin, end: end,
+          colors: [Color(0xFF0B2B3A), Color(0xFF132A4D), Color(0xFF3A1D5C)]);
+    case 'ocean':
+      return const LinearGradient(begin: begin, end: end,
+          colors: [Color(0xFF0E3350), Color(0xFF071019)]);
+    case 'sunset':
+      return const LinearGradient(begin: begin, end: end,
+          colors: [Color(0xFF3A1414), Color(0xFF7A2410), Color(0xFFB45309)]);
+    case 'ember':
+      return const LinearGradient(begin: begin, end: end,
+          colors: [Color(0xFF4A3008), Color(0xFF0A0E15)]);
+    case 'carbon':
+      return const LinearGradient(begin: begin, end: end,
+          colors: [Color(0xFF0F1522), Color(0xFF0C111A)]);
+    default:
+      return null;
+  }
+}
+
 /// Font families. The web preview uses Chakra Petch (instrument / numeric) and
 /// Barlow (body). Add the .ttf files + pubspec entries and swap these strings
 /// to "ChakraPetch" / "Barlow"; until then they fall back to the platform sans.

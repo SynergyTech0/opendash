@@ -1,12 +1,14 @@
 package cloud.synergytech.opendash.model
 
+import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -29,7 +31,9 @@ data class Toast(val message: String, val danger: Boolean)
  * delete button removes a row from [tracks] (a real observable list), the
  * position advances on a 1 Hz coroutine, and the clock ticks the same way.
  */
-class DashViewModel : ViewModel() {
+class DashViewModel(app: Application) : AndroidViewModel(app) {
+
+    private val prefs = app.getSharedPreferences("opendash", Context.MODE_PRIVATE)
 
     // ---- media library ----
     val tracks: SnapshotStateList<Track> = mutableStateListOf(
@@ -76,11 +80,19 @@ class DashViewModel : ViewModel() {
     var clock by mutableStateOf(""); private set
     var date by mutableStateOf(""); private set
 
+    // ---- dash background: "none" | "preset" | "image", remembered across launches ----
+    var bgType by mutableStateOf("none"); private set
+    var bgKey by mutableStateOf<String?>(null); private set
+    var bgImageUri by mutableStateOf<String?>(null); private set
+
     // ---- toast channel ----
     private val _toasts = Channel<Toast>(Channel.CONFLATED)
     val toasts = _toasts.receiveAsFlow()
 
     init {
+        bgType = prefs.getString("bg_type", "none") ?: "none"
+        bgKey = prefs.getString("bg_key", null)
+        bgImageUri = prefs.getString("bg_image", null)
         updateClock()
         // playback tick
         viewModelScope.launch {
@@ -164,6 +176,19 @@ class DashViewModel : ViewModel() {
 
     // ---- settings ----
     fun toggleUnits() { units = if (units == "F") "C" else "F" }
+
+    // ---- dash background ----
+    fun setBgPreset(key: String) { bgType = "preset"; bgKey = key; bgImageUri = null; saveBg() }
+    fun setBgImage(uri: String) { bgType = "image"; bgImageUri = uri; bgKey = null; saveBg() }
+    fun clearBg() { bgType = "none"; bgKey = null; bgImageUri = null; saveBg() }
+
+    private fun saveBg() {
+        prefs.edit()
+            .putString("bg_type", bgType)
+            .putString("bg_key", bgKey)
+            .putString("bg_image", bgImageUri)
+            .apply()
+    }
 
     private fun toast(message: String, danger: Boolean = false) {
         _toasts.trySend(Toast(message, danger))

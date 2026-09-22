@@ -51,6 +51,72 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+          // dash background card (built-in presets)
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: c.panel,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: c.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: c.panel2,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      child: Icon(Icons.wallpaper, size: 20, color: c.dim),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Dash background', style: body(15, c.ink, weight: FontWeight.w600)),
+                          Text('A backdrop behind the dash', style: body(13, c.dim)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _Swatch(
+                        selected: m.bgType == 'none',
+                        onTap: m.clearBg,
+                        color: c.panel2,
+                        line: c.line,
+                        amber: c.amber,
+                        child: Icon(Icons.block, size: 18, color: c.faint),
+                      ),
+                      for (final key in kBgPresetKeys) ...[
+                        const SizedBox(width: 10),
+                        _Swatch(
+                          selected: m.bgType == 'preset' && m.bgKey == key,
+                          onTap: () => m.setBgPreset(key),
+                          gradient: bgPresetGradient(key),
+                          line: c.line,
+                          amber: c.amber,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           // about card
           Container(
             padding: const EdgeInsets.all(18),
@@ -138,6 +204,44 @@ class _Row extends StatelessWidget {
         ),
         if (divider) Container(height: 1, color: c.line),
       ],
+    );
+  }
+}
+
+class _Swatch extends StatelessWidget {
+  const _Swatch({
+    required this.selected,
+    required this.onTap,
+    required this.line,
+    required this.amber,
+    this.gradient,
+    this.color,
+    this.child,
+  });
+  final bool selected;
+  final VoidCallback onTap;
+  final Color line;
+  final Color amber;
+  final Gradient? gradient;
+  final Color? color;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 54,
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: gradient,
+          color: gradient == null ? color : null,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: selected ? amber : line, width: 2),
+        ),
+        child: child,
+      ),
     );
   }
 }

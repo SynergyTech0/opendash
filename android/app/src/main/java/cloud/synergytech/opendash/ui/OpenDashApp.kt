@@ -44,9 +44,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import cloud.synergytech.opendash.model.DashViewModel
 import cloud.synergytech.opendash.model.Screen
 import cloud.synergytech.opendash.model.Toast
+import cloud.synergytech.opendash.ui.components.UriImage
+import cloud.synergytech.opendash.ui.components.bgPresetBrush
 import cloud.synergytech.opendash.ui.components.richText
 import cloud.synergytech.opendash.ui.screens.ClimateScreen
 import cloud.synergytech.opendash.ui.screens.MediaScreen
@@ -61,6 +64,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun OpenDashApp(vm: DashViewModel) {
     Box(Modifier.fillMaxSize().background(Dash.screen)) {
+        DashBackground(vm)
         Column(Modifier.fillMaxSize()) {
             StatusBar(vm)
             Row(Modifier.fillMaxSize()) {
@@ -77,6 +81,26 @@ fun OpenDashApp(vm: DashViewModel) {
             }
         }
         ToastHost(vm)
+    }
+}
+
+/** The user-chosen backdrop (preset gradient or photo) with a legibility scrim. */
+@Composable
+private fun DashBackground(vm: DashViewModel) {
+    if (vm.bgType == "none") return
+    Box(Modifier.fillMaxSize()) {
+        when (vm.bgType) {
+            "preset" -> bgPresetBrush(vm.bgKey)?.let { brush ->
+                Box(Modifier.fillMaxSize().background(brush))
+            }
+            "image" -> vm.bgImageUri?.let { uri ->
+                UriImage(uri, modifier = Modifier.fillMaxSize())
+            }
+        }
+        // scrim — lighter in day mode, darker at night
+        val scrim = if (vm.day) Color(0xFFEDEFF5).copy(alpha = 0.42f)
+                    else Color(0xFF070A0F).copy(alpha = 0.5f)
+        Box(Modifier.fillMaxSize().background(scrim))
     }
 }
 

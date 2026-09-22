@@ -79,6 +79,13 @@ class DashModel extends ChangeNotifier {
   String clock = '';
   String date = '';
 
+  // dash background. The Flutter build ships the built-in presets only ('none' |
+  // 'preset'): the photo-upload and cross-launch persistence in the web/Qt/
+  // Android builds need a platform file-picker / prefs package, which this build
+  // deliberately avoids so it stays dependency-free and runs on flutter-elinux.
+  String bgType = 'none';
+  String? bgKey;
+
   DashColors get colors => day ? DashColors.day : DashColors.night;
 
   // toast: latest message + a counter so the UI knows when a new one arrives
@@ -243,6 +250,19 @@ class DashModel extends ChangeNotifier {
 
   void toggleUnits() {
     units = units == 'F' ? 'C' : 'F';
+    notifyListeners();
+  }
+
+  // ---- dash background ----
+  void setBgPreset(String key) {
+    bgType = 'preset';
+    bgKey = key;
+    notifyListeners();
+  }
+
+  void clearBg() {
+    bgType = 'none';
+    bgKey = null;
     notifyListeners();
   }
 

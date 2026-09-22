@@ -8,9 +8,10 @@ set(CMAKE_AUTOMOC ON)
 
 # Qt 6.4+ (bookworm on the Raspberry Pi ships 6.4). Icons and album art are
 # drawn with Qt Quick Shapes (part of Qt Quick), so no QtSvg dependency.
-# QtQuick.Controls.Basic + QtQuick.Shapes are pulled in as QML imports at
-# runtime; on Debian/RPi OS install qml6-module-qtquick-controls and
-# qml6-module-qtquick-shapes alongside qt6-declarative-dev.
+# QtQuick.Controls.Basic + QtQuick.Shapes + QtQuick.Dialogs (the Settings
+# background photo picker) are pulled in as QML imports at runtime; on
+# Debian/RPi OS install qml6-module-qtquick-controls, qml6-module-qtquick-shapes
+# and qml6-module-qtquick-dialogs alongside qt6-declarative-dev.
 find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Qml Quick)
 
 qt_standard_project_setup(REQUIRES 6.4)

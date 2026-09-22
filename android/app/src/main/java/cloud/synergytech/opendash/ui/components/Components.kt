@@ -1,5 +1,8 @@
 package cloud.synergytech.opendash.ui.components
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -10,6 +13,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,6 +22,10 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -26,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cloud.synergytech.opendash.ui.theme.Dash
 import cloud.synergytech.opendash.ui.theme.DisplayFamily
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.max
 
 // Generated album-art palettes (inner, outer), keyed by track seed — the same
@@ -102,4 +113,39 @@ fun richText(html: String): AnnotatedString = buildAnnotatedString {
 fun fmtTime(seconds: Int): String {
     val s = seconds.coerceAtLeast(0)
     return "${s / 60}:${(s % 60).toString().padStart(2, '0')}"
+}
+
+// ---- dash background ----
+
+/** Built-in dash-background preset keys, shared by every OpenDash stack. */
+val BgPresetKeys = listOf("aurora", "ocean", "sunset", "ember", "carbon")
+
+/** The gradient brush for a preset key, or null for "none"/unknown. */
+fun bgPresetBrush(key: String?): Brush? = when (key) {
+    "aurora" -> Brush.linearGradient(listOf(Color(0xFF0B2B3A), Color(0xFF132A4D), Color(0xFF3A1D5C)))
+    "ocean" -> Brush.linearGradient(listOf(Color(0xFF0E3350), Color(0xFF071019)))
+    "sunset" -> Brush.linearGradient(listOf(Color(0xFF3A1414), Color(0xFF7A2410), Color(0xFFB45309)))
+    "ember" -> Brush.linearGradient(listOf(Color(0xFF4A3008), Color(0xFF0A0E15)))
+    "carbon" -> Brush.linearGradient(listOf(Color(0xFF0F1522), Color(0xFF0C111A)))
+    else -> null
+}
+
+/**
+ * Draws a user-picked content:// image. Decoded off the main thread with the
+ * platform BitmapFactory so OpenDash keeps its zero-extra-dependency footprint
+ * (no image-loading library). Renders nothing until the bitmap is ready.
+ */
+@Composable
+fun UriImage(uri: String, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop) {
+    val context = LocalContext.current
+    val bitmap by produceState<ImageBitmap?>(initialValue = null, uri) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                context.contentResolver.openInputStream(Uri.parse(uri))?.use { stream ->
+                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                }
+            }.getOrNull()
+        }
+    }
+    bitmap?.let { Image(it, contentDescription = null, modifier = modifier, contentScale = contentScale) }
 }

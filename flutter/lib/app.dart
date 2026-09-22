@@ -55,6 +55,7 @@ class _Shell extends StatelessWidget {
     final m = DashScope.of(context);
     return Stack(
       children: [
+        if (m.bgType != 'none') const _DashBackground(),
         Column(
           children: [
             const _StatusBar(),
@@ -86,6 +87,29 @@ class _Shell extends StatelessWidget {
       case DashScreen.settings:
         return const SettingsScreen();
     }
+  }
+}
+
+/// The user-chosen backdrop (a preset gradient) with a legibility scrim.
+class _DashBackground extends StatelessWidget {
+  const _DashBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    final m = DashScope.of(context);
+    final g = bgPresetGradient(m.bgKey);
+    if (g == null) return const SizedBox.shrink();
+    final scrim = m.day
+        ? const Color(0xFFEDEFF5).withOpacity(0.42)
+        : const Color(0xFF070A0F).withOpacity(0.5);
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: g))),
+          Positioned.fill(child: ColoredBox(color: scrim)),
+        ],
+      ),
+    );
   }
 }
 

@@ -1,10 +1,19 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Dialogs
 
-// Night/Day theme, brightness, units, and an About card. Night mode drives the
-// whole HMI palette through Dash.day.
+// Night/Day theme, brightness, units, a dash-background picker, and an About
+// card. Night mode drives the whole HMI palette through Dash.day.
 Item {
     id: view
+
+    // Native file picker for "bring your own photo" backgrounds.
+    FileDialog {
+        id: bgDialog
+        title: "Choose a dash background"
+        nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.bmp)"]
+        onAccepted: Dash.setBgImage(selectedFile)
+    }
 
     // A pill switch. Emits toggled(); the caller owns the state.
     component Sw: Rectangle {
@@ -105,6 +114,86 @@ Item {
                                 font.family: Theme.display; font.pixelSize: 14
                                 TapHandler { onTapped: Dash.toggleUnits() }
                             }
+                        }
+                    }
+                }
+            }
+
+            // dash background card
+            Rectangle {
+                width: parent.width
+                radius: Theme.r
+                color: Theme.panel; border.color: Theme.line; border.width: 1
+                height: bgcol.implicitHeight + 24
+
+                Column {
+                    id: bgcol
+                    x: 12; y: 12
+                    width: parent.width - 24
+                    spacing: 12
+
+                    RowLead { width: parent.width; icon: "image"; primary: "Dash background"
+                              sub: "A backdrop behind the dash — a preset or your own photo" }
+
+                    Flow {
+                        width: parent.width
+                        spacing: 10
+
+                        // none
+                        Rectangle {
+                            width: 54; height: 38; radius: 10
+                            color: Theme.panel2
+                            border.width: 2
+                            border.color: Dash.bgType === "none" ? Theme.amber : Theme.line
+                            DashIcon { anchors.centerIn: parent; name: "ban"; size: 18; color: Theme.faint }
+                            TapHandler { onTapped: Dash.clearBg() }
+                        }
+
+                        // built-in presets
+                        Repeater {
+                            model: [
+                                { key: "aurora", c1: "#0b2b3a", c2: "#3a1d5c" },
+                                { key: "ocean",  c1: "#0e3350", c2: "#071019" },
+                                { key: "sunset", c1: "#3a1414", c2: "#b45309" },
+                                { key: "ember",  c1: "#4a3008", c2: "#0a0e15" },
+                                { key: "carbon", c1: "#0f1522", c2: "#0c111a" }
+                            ]
+                            delegate: Rectangle {
+                                required property var modelData
+                                width: 54; height: 38; radius: 10
+                                gradient: Gradient {
+                                    GradientStop { position: 0.0; color: modelData.c1 }
+                                    GradientStop { position: 1.0; color: modelData.c2 }
+                                }
+                                border.width: 2
+                                border.color: (Dash.bgType === "preset" && Dash.bgKey === modelData.key)
+                                              ? Theme.amber : Theme.line
+                                TapHandler { onTapped: Dash.setBgPreset(modelData.key) }
+                            }
+                        }
+
+                        // current photo (tap to clear)
+                        Rectangle {
+                            visible: Dash.bgType === "image"
+                            width: 54; height: 38; radius: 10; clip: true
+                            border.width: 2; border.color: Theme.amber
+                            Image { anchors.fill: parent; source: Dash.bgImage; fillMode: Image.PreserveAspectCrop }
+                            TapHandler { onTapped: Dash.clearBg() }
+                        }
+
+                        // upload
+                        Rectangle {
+                            width: 100; height: 38; radius: 10
+                            color: Theme.panel2; border.color: Theme.line; border.width: 1
+                            Row {
+                                anchors.centerIn: parent; spacing: 8
+                                DashIcon { name: "image"; size: 16; color: Theme.dim
+                                           anchors.verticalCenter: parent.verticalCenter }
+                                Text { text: Dash.bgType === "image" ? "CHANGE" : "UPLOAD"; color: Theme.dim
+                                       font.family: Theme.display; font.pixelSize: 11; font.letterSpacing: 0.8
+                                       anchors.verticalCenter: parent.verticalCenter }
+                            }
+                            TapHandler { onTapped: bgDialog.open() }
                         }
                     }
                 }
